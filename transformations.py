@@ -46,4 +46,8 @@ class Scale(Transformer):
         return Series([self.a + self.b * x for x in series])
 
     def invert(self, series):
-        return Series([(x-self.a) / self.b for x in series])
+        return Series([self.invert_value(x) for x in series])
+        
+    def invert_value(self, val):
+        return ( val - self.a) / self.b
+

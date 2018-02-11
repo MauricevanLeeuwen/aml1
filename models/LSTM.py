@@ -7,19 +7,27 @@ from keras.layers import Dense, RNN, LSTM as kerasLSTM
 from pandas import Series
 
 class LSTM():
-    def __init__(self, epochs=1000, batch_size=256, weights=None):
+    def __init__(self, units = [5], dropout=None, regularizer=None, epochs=1000, batch_size=256, weights=None):
         self.batch_size = batch_size
         self.time_steps = 1
         self.num_features = 1
         self.epochs = epochs
-        self.units = [5]
+        self.units = units
         self.activation = ["tanh", "linear"]
-        self.model = self._create(weights=weights)
+        self.regularizer = regularizer
+        self.dropout = dropout
 
-    def _create(self, weights=None):
+        self.model = self._create(batch_size=self.batch_size, weights=weights)
+
+    def _create(self, batch_size=1, weights=None):
         model = Sequential()
-        model.add(kerasLSTM( self.units[0], batch_input_shape=(self.batch_size, self.time_steps, self.num_features),
-            activation=self.activation[0], return_sequences=True, stateful=True))
+        model.add(kerasLSTM( self.units[0],
+            batch_input_shape=(batch_size, self.time_steps, self.num_features),
+            activation=self.activation[0],
+            kernel_regularizer = self.regularizer,
+            dropout = self.dropout,
+            return_sequences=True,
+            stateful=True))
         model.add(Dense(1, activation=self.activation[-1]))
         
         if(weights is not None):
@@ -42,14 +50,28 @@ class LSTM():
 
     def _prediction_model(self):
         old_weights = self.model.get_weights()
-        return LSTM(batch_size=1, weights=old_weights).model
+        return self._create(batch_size=1, weights=old_weights)
     
+    def multistep_forecast(self, x, horizon=24):
+        predictions={}
+        for i in range(horizon):
+            predictions[i] = []
+        
+        model = self._prediction_model()
+        for t_0 in range(1, len(x)+1):
+            model.reset_states()
+            predictions[0].append(model.predict(x[:t_0], batch_size=1)[-1][0][0])
+            for t_n in range(1, horizon):
+                y = model.predict(predictions[t_n-1][-1].reshape(1,1,1), batch_size=1)
+                predictions[t_n].append(y[0][0][0])
+        return predictions
+
     def forecast(self, x, horizon=6): # SKIP?
         model = self._prediction_model()
         results = []
 
         model.reset_states()
-        return Series(model.predict(x, batch_size=1).reshape(-1))
+        #return Series(model.predict(x, batch_size=1).reshape(-1))
         """
         for t_0 in range(1, len(x)+1):
             predictions = []
