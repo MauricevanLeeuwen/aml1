@@ -8,7 +8,7 @@ from pandas import Series
 from keras.regularizers import l2
 
 class RNN():
-    def __init__(self, units = [5], dropout=None, layers=1, regularizer=None, epochs=1000, batch_size=256, weights=None):
+    def __init__(self, units = 5, dropout=None, layers=1, regularizer=None, epochs=1000, batch_size=256, weights=None):
         self.batch_size = batch_size
         self.time_steps = 1
         self.num_features = 1
@@ -23,7 +23,7 @@ class RNN():
     def _create(self, batch_size=1, weights=None):
         model = Sequential()
         for n in range(self.layers):
-            model.add(SimpleRNN( self.units[0],
+            model.add(SimpleRNN( int(self.units),
                 batch_input_shape=(batch_size, 1 ,1),
                 activation=self.activation[0],
                 kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
