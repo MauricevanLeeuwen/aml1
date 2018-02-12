@@ -70,17 +70,20 @@ class FNN():
 
     
     def multistep_forecast(self, x, horizon=24):
+        x = self.window(x, ws=50)
+
         predictions={}
         for i in range(horizon):
             predictions[i] = []
         
         model = self._prediction_model()
-        for t_0 in range(1, len(x)+1):
-            model.reset_states()
-            predictions[0].append(model.predict(x[:t_0], batch_size=1)[-1][0][0])
+        for t_0 in x:
+            current_window = t_0
+            predictions[0].append(model.predict(np.array([current_window]), batch_size=1)[0][0])
             for t_n in range(1, horizon):
-                y = model.predict(predictions[t_n-1][-1].reshape(1,1,1), batch_size=1)
-                predictions[t_n].append(y[0][0][0])
+                current_window = np.append( current_window[1:], predictions[t_n-1][-1]  )
+                y = model.predict( np.array([current_window]), batch_size=1)
+                predictions[t_n].append(y[0][0])
         return predictions
 
     def forecast(self, x, horizon=6): # SKIP?

@@ -67,7 +67,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'fnn', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'final', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
@@ -173,11 +173,82 @@ def run_experiment(experiment):
         ], axis=1)
 
         """
+def evaluate_final(model, cv_n, model_type, experiment_id, scale, x_test, y_test):
+    predictions = model.multistep_forecast( x_test, horizon=24)
+    #todo: shift forecast of t_n with n steps
+    p = DataFrame(predictions)
+    p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
 
-        
+    for c,n in zip( p.columns, range(len(p.columns))):
+        p[c] = p[c].shift(n)
 
-for e in experiments():
-    wrap_experiment(e, run_experiment)
+    targets = scale.invert( Series(y_test.reshape(-1)) )
+    p  = p.applymap(scale.invert_value)
+    rmse = lambda col: root_mean_square_error(targets[24:], col[24:])
+    mase = lambda col: mean_absolute_scale_error(targets[24:], col[24:])
+    sigma2 = lambda col: error_variance(targets[24:], col[24:])    
+    measures = p.agg([
+        rmse, mase, sigma2
+        ])
+
+    measures = measures.reset_index()
+    measures = concat([ 
+        measures,
+        Series(["rmse", "mase", "sigma2"], name="measurement_type"),
+        Series([cv_n, cv_n, cv_n], name="cv_step"),
+        Series([experiment_id,experiment_id,experiment_id], name="experiment_id"),
+        Series([model_type,model_type,model_type], name="model_type"),
+    ], axis=1)
+    return measures
+
+def final_experiments():
+    experiment_id =1
+    res = {}
+    res['experiment_id'] = experiment_id
+    res['units'] = 5
+    res['dropout'] = 0.1
+    res['epochs'] = 5
+    res['layers'] = 1
+    res['regularizer'] = "l2"
+    yield res
+
+
+def final_run(experiment):
+    records=[]
+    cv_n=0
+    experiment_id = experiment.loc[0]['experiment_id']
+
+
+    training_set = scale.apply(in_sample[location])
+    validation_set = scale.apply(out_of_sample[location])
+    validation_set = validation_set[:500]
+    y = training_set[1:].reshape(-1, 1, 1)
+    x = training_set[:-1].reshape(-1, 1, 1)
+
+    y_test = validation_set[1:].reshape(-1, 1, 1)
+    x_test = validation_set[:-1].reshape(-1, 1, 1)
+
+
+    #model = RNN.RNN(units=[1] regularizer="l2" layers=1, dropout=0.1, epochs=experiment.loc[0]['epochs'])
+    #model = model.train(x,y,x_test,y_test)
+    #measures = evaluate_final(model, cv_n, "RNN", experiment_id, scale, x_test, y_test)
+    #yield measures
+
+    #model = LSTM.LSTM(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
+    #model = model.train(x,y,x_test,y_test)
+    #measures = evaluate_final(model, cv_n, "LSTM", experiment_id, scale, x_test, y_test)
+    #yield measures
+
+    model = FNN.FNN(units=[100], regularizer="l2", layers=1, dropout=0.0, epochs=250)
+    model = model.train(x,y,x_test,y_test)
+    measures = evaluate_final(model, cv_n, "FNN", experiment_id, scale, x_test, y_test[50:])
+    yield measures
+
+
+
+
+for e in final_experiments():
+    wrap_experiment(e, final_run)
 
 
 
