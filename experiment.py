@@ -229,7 +229,7 @@ def final_run(experiment):
     x_test = validation_set[:-1].reshape(-1, 1, 1)
 
 
-    model = RNN.RNN(units=[5], regularizer="l2" layers=1, dropout=0.5, epochs=5)
+    model = RNN.RNN(units=[5], regularizer="l2", layers=1, dropout=0.5, epochs=5)
     model = model.train(x,y,x_test,y_test)
     measures = evaluate_final(model, cv_n, "RNN", experiment_id, scale, x_test, y_test)
     yield measures
