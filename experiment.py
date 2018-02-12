@@ -67,7 +67,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'rnn1', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'fnn', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
@@ -128,20 +128,20 @@ def run_experiment(experiment):
         x_test = validation_set[:-1].reshape(-1, 1, 1)
 
 
-        model = RNN.RNN(units=experiment.loc[0]['units'], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
-        model = model.train(x,y,x_test,y_test)
-        measures = evaluate_model(model, cv_n, "RNN", experiment_id, scale, x_test, y_test)
-        yield measures
+        #model = RNN.RNN(units=experiment.loc[0]['units'], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
+        #model = model.train(x,y,x_test,y_test)
+        #measures = evaluate_model(model, cv_n, "RNN", experiment_id, scale, x_test, y_test)
+        #yield measures
 
         #model = LSTM.LSTM(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         #model = model.train(x,y,x_test,y_test)
         #measures = evaluate_model(model, cv_n, "LSTM", experiment_id, scale, x_test, y_test)
         #yield measures
 
-        #model = FNN.FNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
-        #model = model.train(x,y,x_test,y_test)
-        #measures = evaluate_model(model, cv_n,g "FNN", experiment_id, scale, x_test, y_test)
-        #yield measures
+        model = FNN.FNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
+        model = model.train(x,y,x_test,y_test)
+        measures = evaluate_model(model, cv_n, "FNN", experiment_id, scale, x_test, y_test[50:])
+        yield measures
 
 
 
