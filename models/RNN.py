@@ -23,7 +23,7 @@ class RNN():
     def _create(self, batch_size=1, weights=None):
         model = Sequential()
         for n in range(self.layers):
-            model.add(SimpleRNN( 5,
+            model.add(SimpleRNN( self.units[0],
                 batch_input_shape=(batch_size, 1 ,1),
                 activation=self.activation[0],
                 kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
