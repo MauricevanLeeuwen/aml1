@@ -3,7 +3,7 @@
 #import datetime as dt
 from keras import backend as K
 from keras.models import Sequential
-from keras.layers import Dense, SimpleRNN
+from keras.layers import Dense, Dropout, LSTM, SimpleRNN
 from pandas import Series
 from keras.regularizers import l2
 
@@ -23,8 +23,8 @@ class RNN():
     def _create(self, batch_size=1, weights=None):
         model = Sequential()
         for n in range(self.layers):
-            model.add(SimpleRNN( self.units[0],
-                batch_input_shape=(batch_size, self.time_steps, self.num_features),
+            model.add(SimpleRNN( 5,
+                batch_input_shape=(batch_size, 1 ,1),
                 activation=self.activation[0],
                 kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
                 dropout = self.dropout,
