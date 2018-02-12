@@ -67,7 +67,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'LSTM', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'results', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
@@ -90,6 +90,27 @@ in_sample, out_of_sample = partition(df)
 scale = Scale()
 scale = scale.fit(in_sample[location])
 
+def evaluate_model(model, model_type, experiment_id, scale, x_test, y_test):
+    predictions = model.single_forecast( x_test )
+    p = DataFrame(predictions)
+    p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
+    targets = scale.invert( Series(y_test.reshape(-1)) )
+    p  = p.applymap(scale.invert_value)
+    rmse = lambda col: root_mean_square_error(targets, col)
+    mase = lambda col: mean_absolute_scale_error(targets, col)
+    sigma2 = lambda col: error_variance(targets, col)    
+    measures = p.agg([
+        rmse, mase, sigma2
+        ])
+    measures = measures.reset_index()
+    measures = concat([ 
+        measures,
+        Series(["rmse", "mase", "sigma2"], name="measurement_type"),
+        Series([cv_n, cv_n, cv_n], name="cv_step"),
+        Series([experiment_id,experiment_id,experiment_id], name="experiment_id"),
+        Series([model_type,model_type,model_type], name="model_type"),
+    ], axis=1)
+    return measures
 
 def run_experiment(experiment):
     records=[]
@@ -107,8 +128,23 @@ def run_experiment(experiment):
         x_test = validation_set[:-1].reshape(-1, 1, 1)
 
 
+        #model = RNN.RNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
+        #model = model.train(x,y,x_test,y_test)
+        #measures = evaluate_model(model, "RNN", experiment_id, scale, x_test, y_test):
+        #yield measures
+
         model = LSTM.LSTM(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         model = model.train(x,y,x_test,y_test)
+        measures = evaluate_model(model, "LSTM", experiment_id, scale, x_test, y_test):
+        yield measures
+
+        #model = FNN.FNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
+        #model = model.train(x,y,x_test,y_test)
+        #measures = evaluate_model(model, "FNN", experiment_id, scale, x_test, y_test):
+        #yield measures
+
+
+
 
         """
         predictions = model.multistep_forecast( x_test, horizon=forecast_horizon)
@@ -137,25 +173,8 @@ def run_experiment(experiment):
         ], axis=1)
 
         """
-        predictions = model.single_forecast( x_test )
-        p = DataFrame(predictions)
-        p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
-        targets = scale.invert( Series(y_test.reshape(-1)) )
-        p  = p.applymap(scale.invert_value)
-        rmse = lambda col: root_mean_square_error(targets, col)
-        mase = lambda col: mean_absolute_scale_error(targets, col)
-        sigma2 = lambda col: error_variance(targets, col)    
-        measures = p.agg([
-            rmse, mase, sigma2
-            ])
-        measures = measures.reset_index()
-        measures = concat([ 
-            measures,
-            Series(["rmse", "mase", "sigma2"], name="measurement_type"),
-            Series([cv_n, cv_n, cv_n], name="cv_step"),
-            Series([experiment_id,experiment_id,experiment_id], name="experiment_id")
-        ], axis=1)
-        yield measures
+
+        
 
 for e in experiments():
     wrap_experiment(e, run_experiment)
