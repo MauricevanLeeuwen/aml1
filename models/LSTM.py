@@ -52,6 +52,12 @@ class LSTM():
     def _prediction_model(self):
         old_weights = self.model.get_weights()
         return self._create(batch_size=1, weights=old_weights)
+        
+    def single_forecast(self, x):
+        model = self._prediction_model()
+        model.reset_states()
+        return model.predict(x, batch_size=1).reshape(-1)
+
     
     def multistep_forecast(self, x, horizon=24):
         predictions={}

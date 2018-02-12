@@ -65,7 +65,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'results', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'r2', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
@@ -107,20 +107,18 @@ def run_experiment(experiment):
 
         model = LSTM.LSTM(units=[experiment.loc[0]['units']], dropout=experiment.loc[0]['dropout'], regularizer=experiment.loc[0]['regularizer'], epochs=experiment.loc[0]['epochs'])
         model = model.train(x,y,x_test,y_test)
+
+        """
         predictions = model.multistep_forecast( x_test, horizon=forecast_horizon)
         #todo: shift forecast of t_n with n steps
         p = DataFrame(predictions)
-        p.columns = p.columns.map(lambda i: "yhat_%i" % i)
+        p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
 
         for c,n in zip( p.columns, range(len(p.columns))):
             p[c] = p[c].shift(n)
 
-
-        #predictions = scale.invert(predictions)
-        #predictions = DataFrame([predictions], columns=["t_1"])
         targets = scale.invert( Series(y_test.reshape(-1)) )
         p  = p.applymap(scale.invert_value)
-        #p1 = p.apply(lambda s: {"RMSE":root_mean_square_error(targets[24:], s[24:])} ,  axis=0)   
         rmse = lambda col: root_mean_square_error(targets[24:], col[24:])
         mase = lambda col: mean_absolute_scale_error(targets[24:], col[24:])
         sigma2 = lambda col: error_variance(targets[24:], col[24:])    
@@ -135,24 +133,27 @@ def run_experiment(experiment):
             Series([cv_n, cv_n, cv_n], name="cv_step"),
             Series([experiment_id,experiment_id,experiment_id], name="experiment_id")
         ], axis=1)
-        #Series([experiment_id,experiment_id,experiment_id], name="experiment_id"),
-        #measures = p.agg({"RMSE": lambda col: root_mean_square_error(targets[24:], col[24:]),
-        #    "MASE": ),
-        #    "\sigma^2": ) 
-        #})
-        yield measures
-        """
-        for c in predictions.columns:
-            y_pred = predictions[c]
-            r = experiment.copy()
-            r['cv'] = cv_n
-            r['t_n'] = c
-            r['rmse'] = root_mean_square_error(targets, y_pred)
-            r['mase'] = mean_absolute_scale_error(targets, y_pred)
-            r['vare'] = error_variance(targets, y_pred)
-            records+=[r]
-        """
 
+        """
+        predictions = model.single_forecast( x_test )
+        p = DataFrame(predictions)
+        p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
+        targets = scale.invert( Series(y_test.reshape(-1)) )
+        p  = p.applymap(scale.invert_value)
+        rmse = lambda col: root_mean_square_error(targets, col)
+        mase = lambda col: mean_absolute_scale_error(targets, col)
+        sigma2 = lambda col: error_variance(targets, col)    
+        measures = p.agg([
+            rmse, mase, sigma2
+            ])
+        measures = measures.reset_index()
+        measures = concat([ 
+            measures,
+            Series(["rmse", "mase", "sigma2"], name="measurement_type"),
+            Series([cv_n, cv_n, cv_n], name="cv_step"),
+            Series([experiment_id,experiment_id,experiment_id], name="experiment_id")
+        ], axis=1)
+        yield measures
 
 for e in experiments():
     wrap_experiment(e, run_experiment)
