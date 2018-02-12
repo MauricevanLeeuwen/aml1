@@ -27,28 +27,30 @@ def experiments():
 
     experiment_id = 0
     # learnrate = [0.01, 0.001] 
-    model = ['FNN']                                 #['LSTM', 'RNN', 'FNN']
+    #model = ['FNN']                                 #['LSTM', 'RNN', 'FNN']
     #optimizers_lr = [SGD(lr=0.01), SGD(lr=0.001), RMSprop(lr=0.01), RMSprop(lr=0.001),  Adam(lr=0.01), Adam(lr=0.001)]
     #activationhid = ['sigmoid', 'tanh']
     #activationoutput = ['linear', 'nonlinear']      #nonlinear -> use same act func as for hidden layers.
     #hidlayers = [2]                                 #0, 2
-    units = [5, 50, 150, 1000]                      
-    dropout = [0.0, 0.1, 0.2, 0.5]                            #0.7
-    epochs = [5, 50]                                #100, 2000
-    regularizer = [None, "l2"]                        #l1_l2(l1=0.01, l2=0.01), [None, l2(0.01)]
+    units = [5, 10, 100, 1000]                      
+    dropout = [0.0, 0.1, 0.5]                            #0.7
+    epochs = [5, 50, 250]                                #100, 2000
+    layers = [1, 2]    
+    regularizer = ["l2"]                    #l1_l2(l1=0.01, l2=0.01), [None, l2(0.01)]
     #callbacks = [[EarlyStopping(patience=2)]]       #[None, [EarlyStopping(patience=2)]]
 
     #batchsize = [1, 24, 48]
     
     #settings = list(itertools.product(*[model, optimizers_lr, activationhid, activationoutput, hidlayers, nodes, dropout, epochs, regularizer, callbacks]))
-    for item in list(itertools.product(*[units, dropout, epochs, regularizer])):
+    for item in list(itertools.product(*[units, dropout, epochs, layers, regularizer])):
         experiment_id += 1
         res = {}
         res['experiment_id'] = experiment_id
         res['units'] = item[0]
         res['dropout'] = item[1]
         res['epochs'] = item[2]
-        res['regularizer'] = item[3]
+        res['layers'] = item[3]
+        res['regularizer'] = item[4]
         yield res
 
 # testGenerator()
@@ -65,7 +67,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'r2', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'LSTM', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
@@ -105,7 +107,7 @@ def run_experiment(experiment):
         x_test = validation_set[:-1].reshape(-1, 1, 1)
 
 
-        model = LSTM.LSTM(units=[experiment.loc[0]['units']], dropout=experiment.loc[0]['dropout'], regularizer=experiment.loc[0]['regularizer'], epochs=experiment.loc[0]['epochs'])
+        model = LSTM.LSTM(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         model = model.train(x,y,x_test,y_test)
 
         """

@@ -8,11 +8,12 @@ from pandas import Series
 from keras.regularizers import l2
 
 class LSTM():
-    def __init__(self, units = [5], dropout=None, regularizer=None, epochs=1000, batch_size=256, weights=None):
+    def __init__(self, units = [5], dropout=None, layers=1, regularizer=None, epochs=1000, batch_size=256, weights=None):
         self.batch_size = batch_size
         self.time_steps = 1
         self.num_features = 1
         self.epochs = epochs
+        self.layers = layers
         self.units = units
         self.activation = ["tanh", "linear"]
         self.regularizer = regularizer
@@ -22,13 +23,14 @@ class LSTM():
 
     def _create(self, batch_size=1, weights=None):
         model = Sequential()
-        model.add(kerasLSTM( self.units[0],
-            batch_input_shape=(batch_size, self.time_steps, self.num_features),
-            activation=self.activation[0],
-            kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
-            dropout = self.dropout,
-            return_sequences=True,
-            stateful=True))
+        for n in range(self.layers):
+            model.add(kerasLSTM( self.units[0],
+                batch_input_shape=(batch_size, self.time_steps, self.num_features),
+                activation=self.activation[0],
+                kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
+                dropout = self.dropout,
+                return_sequences=True,
+                stateful=True))
         model.add(Dense(1, activation=self.activation[-1]))
         
         if(weights is not None):
@@ -52,7 +54,7 @@ class LSTM():
     def _prediction_model(self):
         old_weights = self.model.get_weights()
         return self._create(batch_size=1, weights=old_weights)
-        
+
     def single_forecast(self, x):
         model = self._prediction_model()
         model.reset_states()
