@@ -7,7 +7,7 @@ from keras.layers import Dense, SimpleRNN
 from pandas import Series
 from keras.regularizers import l2
 
-class RNN()
+class RNN():
    def __init__(self, units = [5], dropout=None, layers=1, regularizer=None, epochs=1000, batch_size=256, weights=None):
         self.batch_size = batch_size
         self.time_steps = 1
