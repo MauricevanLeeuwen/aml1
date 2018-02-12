@@ -90,7 +90,7 @@ in_sample, out_of_sample = partition(df)
 scale = Scale()
 scale = scale.fit(in_sample[location])
 
-def evaluate_model(model, model_type, experiment_id, scale, x_test, y_test):
+def evaluate_model(model, cv_n, model_type, experiment_id, scale, x_test, y_test):
     predictions = model.single_forecast( x_test )
     p = DataFrame(predictions)
     p.columns = p.columns.map(lambda i: "yhat_%i" % (i+1))
@@ -130,17 +130,17 @@ def run_experiment(experiment):
 
         #model = RNN.RNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         #model = model.train(x,y,x_test,y_test)
-        #measures = evaluate_model(model, "RNN", experiment_id, scale, x_test, y_test):
+        #measures = evaluate_model(model, cv_n, "RNN", experiment_id, scale, x_test, y_test):
         #yield measures
 
         model = LSTM.LSTM(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         model = model.train(x,y,x_test,y_test)
-        measures = evaluate_model(model, "LSTM", experiment_id, scale, x_test, y_test)
+        measures = evaluate_model(model, cv_n, "LSTM", experiment_id, scale, x_test, y_test)
         yield measures
 
         #model = FNN.FNN(units=[experiment.loc[0]['units']], regularizer=experiment.loc[0]['regularizer'], layers=experiment.loc[0]['layers'], dropout=experiment.loc[0]['dropout'], epochs=experiment.loc[0]['epochs'])
         #model = model.train(x,y,x_test,y_test)
-        #measures = evaluate_model(model, "FNN", experiment_id, scale, x_test, y_test):
+        #measures = evaluate_model(model, cv_n, "FNN", experiment_id, scale, x_test, y_test):
         #yield measures
 
 
