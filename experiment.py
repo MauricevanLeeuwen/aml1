@@ -67,7 +67,7 @@ def wrap_experiment(experiment, run_fn):
         result = result.set_index("experiment_id")
         result = result.join(experiment.set_index("experiment_id"))
         print(result)
-        result.to_hdf('notebook/experiments.h5', 'results', format='table',append=True)
+        result.to_hdf('notebook/experiments.h5', 'rnn', format='table',append=True)
 
 """
 Change test set size to x_test in line 71
