@@ -35,7 +35,7 @@ def experiments():
     units = [5, 50, 150, 1000]                      
     dropout = [0.0, 0.1, 0.2, 0.5]                            #0.7
     epochs = [5, 50]                                #100, 2000
-    regularizer = [None, l2(0.01)]                        #l1_l2(l1=0.01, l2=0.01), [None, l2(0.01)]
+    regularizer = [None, "l2"]                        #l1_l2(l1=0.01, l2=0.01), [None, l2(0.01)]
     #callbacks = [[EarlyStopping(patience=2)]]       #[None, [EarlyStopping(patience=2)]]
 
     #batchsize = [1, 24, 48]
@@ -107,7 +107,7 @@ def run_experiment(experiment):
 
         model = LSTM.LSTM(units=[experiment.loc[0]['units']], dropout=experiment.loc[0]['dropout'], regularizer=experiment.loc[0]['regularizer'], epochs=experiment.loc[0]['epochs'])
         model = model.train(x,y,x_test,y_test)
-        predictions = model.multistep_forecast( x_test[:50], horizon=forecast_horizon)
+        predictions = model.multistep_forecast( x_test, horizon=forecast_horizon)
         #todo: shift forecast of t_n with n steps
         p = DataFrame(predictions)
         p.columns = p.columns.map(lambda i: "yhat_%i" % i)

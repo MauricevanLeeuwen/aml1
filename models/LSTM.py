@@ -5,6 +5,7 @@ from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense, RNN, LSTM as kerasLSTM
 from pandas import Series
+from keras.regularizers import l2
 
 class LSTM():
     def __init__(self, units = [5], dropout=None, regularizer=None, epochs=1000, batch_size=256, weights=None):
@@ -24,7 +25,7 @@ class LSTM():
         model.add(kerasLSTM( self.units[0],
             batch_input_shape=(batch_size, self.time_steps, self.num_features),
             activation=self.activation[0],
-            kernel_regularizer = self.regularizer,
+            kernel_regularizer = l2(0.01) if self.regularizer == "l2" else None,
             dropout = self.dropout,
             return_sequences=True,
             stateful=True))
